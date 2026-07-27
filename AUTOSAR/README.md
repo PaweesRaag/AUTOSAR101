@@ -331,7 +331,4 @@ Application SWCs
 
 ***
 
-## Summary
-
-AUTOSAR is a standardized automotive software architecture that enables modular, reusable, and scalable development of vehicle software. It separates applications from hardware through well-defined layers and provides standardized services for communication, diagnostics, security, and memory management. By using AUTOSAR, automotive companies can develop software more efficiently while improving interoperability, maintainability, and reliability across vehicle platforms.
 
