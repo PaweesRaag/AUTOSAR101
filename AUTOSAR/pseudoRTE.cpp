@@ -78,6 +78,7 @@ int main()
               << '\n';
 
     std::cout << "\nRIGHT SEAT\n";
+    
     std::cout << "Heater: "
               << rightSeat.heaterOutput.heaterState
               << '\n';

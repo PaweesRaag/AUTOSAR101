@@ -2,12 +2,12 @@
 #include "RTE.h"
 #include "Ports.h"
 #include "swcA.cpp"
-#include "swcB.cpp"
-
+//#include "swcB.cpp"
+#include "../shared/COM.h"
 int main()
 {
     SeatSwitchSWC switchSwc;
-    SeatHeatingControlSWC heaterSwc;
+    //SeatHeatingControlSWC heaterSwc;
 
     std::cout << "Enter switch state (0/1): ";
 
@@ -15,17 +15,22 @@ int main()
 
     switchSwc.Process();
 
-    heaterSwc.ReadSignal();
+    // RTE -> COM
+    COM::SendSignal(
+    Rte_Read_SeatSwitch()
+    );
 
-    heaterSwc.Process();
+    //heaterSwc.ReadSignal();
 
-    std::cout << "\nHeater State: "
-              << heaterSwc.heaterOutput.heaterState
-              << '\n';
+    //heaterSwc.Process();
 
-    std::cout << "LED State: "
-              << heaterSwc.ledOutput.ledState
-              << '\n';
+    //std::cout << "\nHeater State: "
+      //        << heaterSwc.heaterOutput.heaterState
+        //      << '\n';
+
+    //std::cout << "LED State: "
+      //        << heaterSwc.ledOutput.ledState
+        //      << '\n';
 
     return 0;
 }

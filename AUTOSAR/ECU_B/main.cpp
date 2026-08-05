@@ -1,4 +1,5 @@
 #include "swcB.cpp"
+#include "../shared/COM.h"
 
 int main()
 {
@@ -7,6 +8,10 @@ int main()
     heaterSwc.ReadSignal();
 
     heaterSwc.Process();
+
+    Rte_Write_SeatSwitch(
+    COM::ReceiveSignal()
+    );
 
     heaterSwc.Display();
 
