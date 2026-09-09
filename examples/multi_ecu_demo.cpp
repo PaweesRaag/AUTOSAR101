@@ -1,41 +1,50 @@
 #include <iostream>
 
-#include "CanStack.h"
+#include "CanDrv.h"
+#include "CanIf.h"
 #include "PduR.h"
 #include "VehicleSignals.h"
 
+namespace
+{
+CanIf::CanFrame makeSeatSwitchFrame(bool enabled)
+{
+    return CanIf::CanFrame{
+        VehicleSignals::kSeatSwitchCanId,
+        enabled
+    };
+}
+}
+
 int main()
 {
-    using VehicleSignals::kSeatSwitchCanId;
-
     std::cout << "=== AUTOSAR101 Multi-ECU Demo ===\n";
     std::cout << "[ECU_A] SeatSwitchSWC -> RTE -> COM -> PduR -> CanIf -> CanDrv\n";
 
-    const bool switchState = true;
+    const CanIf::CanFrame txFrame = makeSeatSwitchFrame(true);
 
-    CanIf::CanFrame txFrame{
-        kSeatSwitchCanId,
-        switchState
+    PduR::RouteComToLower(txFrame.switchState);
+    const CanIf::CanFrame routedFrame{
+        txFrame.id,
+        PduR::RouteLowerToCom()
     };
 
-    PduR::RouteTransmit(txFrame.switchState);
-    const bool routedSignal = PduR::RouteReceive();
+    CanIf::Transmit(routedFrame);
+    CanDrv::Write(routedFrame);
 
-    txFrame.switchState = routedSignal;
-    CanStack::Transmit(txFrame);
-
-    std::cout << "[CAN ] TX ID=0x" << std::hex << txFrame.id
-              << std::dec << " SeatSwitch=" << txFrame.switchState << '\n';
+    std::cout << "[CAN ] TX ID=0x" << std::hex << routedFrame.id
+              << std::dec << " SeatSwitch=" << routedFrame.switchState << '\n';
 
     CanIf::CanFrame rxFrame{};
-    if (!CanStack::Receive(rxFrame))
+    if (!CanDrv::Read(rxFrame))
     {
         std::cerr << "[ECU_B] No CAN frame received\n";
         return 1;
     }
 
-    std::cout << "[ECU_B] RX ID=0x" << std::hex << rxFrame.id
-              << std::dec << " SeatSwitch=" << rxFrame.switchState << '\n';
+    std::cout << "[ECU_B] CanIf received ID=0x" << std::hex
+              << rxFrame.id << std::dec << '\n';
+
     std::cout << "[ECU_B] SeatHeatingSWC -> Heater="
               << rxFrame.switchState << " LED="
               << rxFrame.switchState << '\n';
