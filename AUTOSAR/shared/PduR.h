@@ -7,12 +7,12 @@ namespace PduR
 {
 
 // Educational routing boundary between COM and lower communication layers.
-inline void RouteTransmit(bool signal)
+inline void RouteComToLower(bool signal)
 {
     COM::SendSignal(signal);
 }
 
-inline bool RouteReceive()
+inline bool RouteLowerToCom()
 {
     return COM::ReceiveSignal();
 }
