@@ -1,0 +1,39 @@
+# Build output
+build/
+out/
+bin/
+Debug/
+Release/
+cmake-build-*/
+
+# Compiled binaries
+*.exe
+*.out
+*.elf
+*.o
+*.obj
+*.a
+*.so
+*.dll
+
+# IDE / editor files
+.vscode/
+.idea/
+.vs/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage / profiling
+coverage/
+*.gcda
+*.gcno
+*.profraw
+
+# Temporary files
+*.tmp
+*.log
+New Text Document.txt
