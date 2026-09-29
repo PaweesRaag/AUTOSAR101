@@ -11,7 +11,9 @@ set(AUTOSAR101_SOURCES
     AUTOSAR/BSW/Communication/CanIf/CanIf.cpp
     AUTOSAR/BSW/Communication/PduR/PduR.cpp
     AUTOSAR/BSW/Communication/Com/Com.cpp
+    AUTOSAR/ECU_A/RTE/Rte_SeatSwitch.cpp
     AUTOSAR/ECU_A/SWC/SeatSwitchSWC.cpp
+    AUTOSAR/ECU_B/RTE/Rte_SeatHeating.cpp
     AUTOSAR/ECU_B/SWC/SeatHeatingSWC.cpp
 )
 
@@ -21,13 +23,19 @@ target_include_directories(multi_ecu_seat_heating PRIVATE AUTOSAR)
 add_executable(test_multi_ecu tests/test_multi_ecu.cpp ${AUTOSAR101_SOURCES})
 target_include_directories(test_multi_ecu PRIVATE AUTOSAR)
 
+add_executable(test_rte tests/test_rte.cpp ${AUTOSAR101_SOURCES})
+target_include_directories(test_rte PRIVATE AUTOSAR)
+
 enable_testing()
 add_test(NAME multi_ecu_communication COMMAND test_multi_ecu)
+add_test(NAME rte_communication COMMAND test_rte)
 
 if (MSVC)
   target_compile_options(multi_ecu_seat_heating PRIVATE /W4 /WX)
   target_compile_options(test_multi_ecu PRIVATE /W4 /WX)
+  target_compile_options(test_rte PRIVATE /W4 /WX)
 else()
   target_compile_options(multi_ecu_seat_heating PRIVATE -Wall -Wextra -Wpedantic -Werror)
   target_compile_options(test_multi_ecu PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(test_rte PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
