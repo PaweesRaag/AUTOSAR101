@@ -10,8 +10,8 @@ experiments while adding a structured, testable communication-stack simulator.
 
 ## Current implementation
 
-The new C++ simulator demonstrates a complete in-process signal path between
-two independently modelled ECUs:
+The C++ simulator demonstrates a complete in-process signal path between two
+independently modelled ECUs:
 
 ```text
 ECU A SWC -> RTE -> COM -> PduR -> CanIf
@@ -22,14 +22,15 @@ ECU B SWC <- RTE <- COM <- PduR <- CanIf
 ```
 
 - **RTE:** ECU-local typed sender-receiver sample storage.
-- **COM:** packs/unpacks a 16-bit vehicle-speed signal in big-endian order.
+- **COM:** packs/unpacks two unsigned 16-bit big-endian signals: vehicle speed
+  and engine speed, in a four-byte vehicle-status PDU.
 - **PduR:** maps the configured PDU identifier to/from CAN ID `0x120`.
 - **CanIf:** hardware-independent boundary with classic-CAN DLC validation.
 - **CanBus:** deterministic FIFO transport queue for the two ECU endpoints.
-- **Tests:** signal round trips, malformed PDUs, routing, FIFO behaviour,
-  invalid DLC and an end-to-end ECU A → ECU B integration test.
+- **Tests:** multi-signal round trips, malformed PDU lengths, invalid routing,
+  classic-CAN payload bounds, FIFO behaviour and end-to-end ECU transfer.
 
-The current model intentionally contains one signal, one PDU and one CAN ID.
+The current model intentionally contains one vehicle-status PDU and one CAN ID.
 See [Architecture](docs/ARCHITECTURE.md) for module boundaries and limitations.
 
 ## Build, test and run
