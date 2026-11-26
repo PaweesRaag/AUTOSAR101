@@ -22,29 +22,37 @@ void check(bool condition, const std::string& name) {
 
 void test_com_round_trip() {
     using namespace autosar101;
-    for (const auto value : {std::uint16_t{0}, std::uint16_t{85}, std::uint16_t{65535}}) {
-        const auto decoded = Com::unpack_vehicle_speed(
-            Com::pack_vehicle_speed(SignalFrame{value}));
-        check(decoded && decoded->vehicle_speed_kmh == value,
-              "COM round-trip value " + std::to_string(value));
+    const SignalFrame samples[] = {
+        {0, 0}, {85, 2400}, {65535, 65535}, {1, 32768}
+    };
+
+    for (const auto& sample : samples) {
+        const auto pdu = Com::pack_vehicle_status(sample);
+        const auto decoded = Com::unpack_vehicle_status(pdu);
+        check(decoded && decoded->vehicle_speed_kmh == sample.vehicle_speed_kmh
+                       && decoded->engine_speed_rpm == sample.engine_speed_rpm,
+              "COM round-trip speed=" + std::to_string(sample.vehicle_speed_kmh)
+                  + ", rpm=" + std::to_string(sample.engine_speed_rpm));
     }
 }
 
 void test_com_rejects_invalid_pdu() {
     using namespace autosar101;
-    auto pdu = Com::pack_vehicle_speed(SignalFrame{42});
-    pdu.length = 1;
-    check(!Com::unpack_vehicle_speed(pdu), "COM rejects incorrect payload length");
-    pdu = Com::pack_vehicle_speed(SignalFrame{42});
+    auto pdu = Com::pack_vehicle_status(SignalFrame{42, 900});
+    pdu.length = 3;
+    check(!Com::unpack_vehicle_status(pdu), "COM rejects truncated vehicle-status PDU");
+    pdu.length = 5;
+    check(!Com::unpack_vehicle_status(pdu), "COM rejects oversized vehicle-status PDU");
+    pdu = Com::pack_vehicle_status(SignalFrame{42, 900});
     pdu.pdu_id = 99;
-    check(!Com::unpack_vehicle_speed(pdu), "COM rejects unknown PDU identifier");
+    check(!Com::unpack_vehicle_status(pdu), "COM rejects unknown PDU identifier");
 }
 
 void test_pdur_routing() {
     using namespace autosar101;
-    const auto pdu = Com::pack_vehicle_speed(SignalFrame{1234});
+    const auto pdu = Com::pack_vehicle_status(SignalFrame{1234, 3200});
     const auto frame = PduR::route_to_can(pdu);
-    check(frame && frame->can_id == PduR::kVehicleStatusCanId && frame->dlc == 2,
+    check(frame && frame->can_id == PduR::kVehicleStatusCanId && frame->dlc == 4,
           "PduR maps configured PDU to CAN frame");
     check(frame && PduR::route_from_can(*frame).has_value(),
           "PduR maps received CAN frame to configured PDU");
@@ -52,6 +60,12 @@ void test_pdur_routing() {
     auto invalid = *frame;
     invalid.can_id = 0x777;
     check(!PduR::route_from_can(invalid), "PduR rejects unknown CAN identifier");
+    invalid = *frame;
+    invalid.dlc = 9;
+    check(!PduR::route_from_can(invalid), "PduR rejects invalid CAN DLC");
+    auto invalid_pdu = pdu;
+    invalid_pdu.length = 9;
+    check(!PduR::route_to_can(invalid_pdu), "PduR rejects payload longer than classic CAN");
 }
 
 void test_bus_fifo_and_empty() {
@@ -92,21 +106,22 @@ void test_end_to_end_two_ecus() {
     CanIf can_a{bus};
     CanIf can_b{bus};
 
-    ecu_a.write_vehicle_speed(SignalFrame{246});
-    const auto signal = ecu_a.read_vehicle_speed();
-    const auto pdu = signal ? Com::pack_vehicle_speed(*signal) : Pdu{};
+    ecu_a.write_vehicle_speed(SignalFrame{246, 4100});
+    const auto signals = ecu_a.read_vehicle_speed();
+    const auto pdu = signals ? Com::pack_vehicle_status(*signals) : Pdu{};
     const auto frame = PduR::route_to_can(pdu);
     const bool sent = frame && can_a.transmit(*frame);
     const auto received_frame = can_b.receive();
     const auto received_pdu = received_frame ? PduR::route_from_can(*received_frame) : std::nullopt;
-    const auto received_signal = received_pdu ? Com::unpack_vehicle_speed(*received_pdu) : std::nullopt;
-    if (received_signal) {
-        ecu_b.write_vehicle_speed(*received_signal);
+    const auto received_signals = received_pdu ? Com::unpack_vehicle_status(*received_pdu) : std::nullopt;
+    if (received_signals) {
+        ecu_b.write_vehicle_speed(*received_signals);
     }
     const auto app_value = ecu_b.read_vehicle_speed();
 
-    check(sent && app_value && app_value->vehicle_speed_kmh == 246,
-          "end-to-end ECU A -> bus -> ECU B signal transfer");
+    check(sent && app_value && app_value->vehicle_speed_kmh == 246
+                    && app_value->engine_speed_rpm == 4100,
+          "end-to-end ECU A -> bus -> ECU B transfers both signals");
 }
 
 } // namespace
