@@ -2,6 +2,7 @@
 
 #include "autosar101/types.hpp"
 
+#include <cstddef>
 #include <deque>
 #include <optional>
 
