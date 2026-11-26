@@ -3,10 +3,10 @@
 ## Implemented in the current simulator
 
 - ECU-local typed RTE sample storage
-- COM packing/unpacking for a 16-bit vehicle-speed signal
-- PDU identifier and payload representation
+- COM packing/unpacking for vehicle speed and engine RPM as two unsigned 16-bit big-endian signals
+- Four-byte vehicle-status PDU with strict identifier and payload-length validation
 - PduR mapping between one configured PDU and CAN ID 0x120
-- CanIf payload-length validation
+- CanIf classic-CAN DLC validation
 - Deterministic in-process CAN transport queue
 - Two-ECU end-to-end demonstration
 - Unit/integration tests and CMake/CTest build
