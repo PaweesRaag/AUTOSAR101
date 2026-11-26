@@ -1,18 +1,86 @@
-<img width="860" height="300" alt="AUTOSAR-Blog-Thumbnail" src="https://github.com/user-attachments/assets/6c99a91d-0257-41d3-81c5-4027bc8cc6db" />
+# AUTOSAR101
 
-# Summary
+An educational C++ project exploring AUTOSAR Classic concepts through small,
+executable models. The repository preserves the original learning notes and
+experiments while adding a structured, testable communication-stack simulator.
 
-AUTOSAR (AUTomotive Open System ARchitecture) is a global development partnership founded in 2003 by leading automotive manufacturers (including BMW, Bosch, Mercedes-Benz, and Volkswagen) and suppliers.  Its primary purpose is to establish an open, standardized software architecture for automotive Electronic Control Units (ECUs). 
+> **Scope disclaimer:** This is an AUTOSAR-inspired educational simulation,
+> not an AUTOSAR-compliant implementation, generated RTE/BSW, production ECU
+> software, or physical CAN implementation.
 
-The initiative addresses the escalating complexity of vehicle software by enabling interoperability, scalability, and reusability of software components across different vehicle platforms and suppliers. By standardizing interfaces and basic software modules, AUTOSAR allows OEMs and Tier-1 suppliers to reduce development costs and manage the integration of up to 100+ ECUs in modern vehicles.
-## Prompt Used
+## Current implementation
+
+The new C++ simulator demonstrates a complete in-process signal path between
+two independently modelled ECUs:
+
 ```text
-You are an expert tutor and curriculum designer. Your goal is to help me master the topic of AUTOSAR, Cryptostack and the following topics from beginner to advanced proficiency. 
-<br>
-Follow these rules:
-1. Structure: Break the topic into logical modules. Start with foundational concepts and progressively increase complexity.
-2. Active Learning: After explaining a concept, ask me a quiz question or ask me to explain it back to you in my own words. Do not move to the next concept until I demonstrate understanding.
-3. Feedback: Correct my mistakes immediately with clear, concise explanations.
-4. Context: Use real-world examples and analogies relevant to my background as a intern at Tessolve
-5. Socratic Method: Guide me with questions rather than just giving answers, unless I explicitly ask for a direct explanation.
+ECU A SWC -> RTE -> COM -> PduR -> CanIf
+                                      |
+                                Simulated CAN bus
+                                      |
+ECU B SWC <- RTE <- COM <- PduR <- CanIf
 ```
+
+- **RTE:** ECU-local typed sender-receiver sample storage.
+- **COM:** packs/unpacks a 16-bit vehicle-speed signal in big-endian order.
+- **PduR:** maps the configured PDU identifier to/from CAN ID `0x120`.
+- **CanIf:** hardware-independent boundary with classic-CAN DLC validation.
+- **CanBus:** deterministic FIFO transport queue for the two ECU endpoints.
+- **Tests:** signal round trips, malformed PDUs, routing, FIFO behaviour,
+  invalid DLC and an end-to-end ECU A → ECU B integration test.
+
+The current model intentionally contains one signal, one PDU and one CAN ID.
+See [Architecture](docs/ARCHITECTURE.md) for module boundaries and limitations.
+
+## Build, test and run
+
+Requirements: CMake 3.16+ and a C++17 compiler.
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+./build/autosar101_demo
+```
+
+On Windows, run the generated executable at `build\\autosar101_demo.exe`
+(or the corresponding configuration subdirectory when using a multi-config
+generator).
+
+GitHub Actions builds the project and runs CTest on pushes and pull requests.
+
+## Repository layout
+
+```text
+include/autosar101/   Public module interfaces and shared types
+src/                 COM, PduR, CanIf, bus and demonstration
+tests/               Unit and end-to-end tests
+docs/                Architecture and development roadmap
+AUTOSAR/              Original learning experiments and notes
+```
+
+The original material under `AUTOSAR/` is retained as a record of the learning
+progression: SWCs, ports, RTE experiments, COM and PduR/CanIf demonstrations.
+Some early experiments are intentionally not part of the new CMake target;
+they are historical learning examples, not the maintained integrated build.
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md). Planned extensions include
+configuration-driven signal packing, multiple PDU routes, richer CAN frame
+semantics, queued/unqueued RTE communication, a UDS/DCM/DEM teaching model and
+a SecOC model backed by a vetted cryptographic library.
+
+## Learning notes
+
+- [AUTOSAR introduction](AUTOSAR/README.md)
+- [Part I — learning curriculum and notes](AUTOSAR/PartI.md)
+- [Implementation architecture](docs/ARCHITECTURE.md)
+- [Development roadmap](docs/ROADMAP.md)
+
+## Contributions and claims
+
+The project is intended for learning, experimentation and interview discussion.
+Passing automated tests verifies this simulator's stated behaviour only. It
+does not establish AUTOSAR conformance, timing behaviour, functional safety,
+cybersecurity certification, or physical CAN hardware validation.
