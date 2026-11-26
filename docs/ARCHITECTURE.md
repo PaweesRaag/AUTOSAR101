@@ -14,7 +14,7 @@ ECU A application SWC
         |
        RTE
         |
-       COM       Signal -> PDU payload
+       COM       Signals -> PDU payload
         |
        PduR      PDU ID -> configured CAN ID
         |
@@ -26,7 +26,7 @@ ECU A application SWC
         |
        PduR      CAN ID -> PDU ID
         |
-       COM       PDU payload -> Signal
+       COM       PDU payload -> Signals
         |
        RTE
         |
@@ -39,23 +39,34 @@ separate executable processes share a C++ static variable.
 
 ## Module responsibilities
 
-- **RTE**: stores and exposes a typed sender-receiver sample local to an ECU.
-- **COM**: packs/unpacks the configured 16-bit vehicle-speed signal in
-  big-endian byte order.
-- **PduR**: maps the configured PDU identifier to/from CAN identifier 0x120.
+- **RTE**: stores and exposes a typed vehicle-status sample local to an ECU.
+- **COM**: serializes vehicle speed and engine speed as two unsigned 16-bit
+  big-endian signals. Speed occupies bytes 0–1; engine RPM occupies bytes 2–3.
+  The exact four-byte payload length and PDU identifier are checked on receive.
+- **PduR**: maps the configured PDU identifier to/from CAN identifier 0x120 and
+  rejects unknown identifiers or payload lengths beyond classic CAN's limit.
 - **CanIf**: validates the classic CAN payload length and delegates transport.
 - **CanBus**: deterministic FIFO queue used to model message transfer.
 - **Application**: demonstrates sender and receiver ECU flows.
 
+## Vehicle-status PDU layout
+
+| Byte offset | Width | Signal | Encoding |
+|---|---:|---|---|
+| 0–1 | 16 bits | Vehicle speed (km/h) | Unsigned, big-endian |
+| 2–3 | 16 bits | Engine speed (rpm) | Unsigned, big-endian |
+
+PDU ID: `0x0001`; CAN ID: `0x120`; payload length: 4 bytes.
+
 ## Deliberate simplifications
 
-The model uses one signal, one PDU, one CAN ID and classic CAN's eight-byte
+The model uses one vehicle-status PDU, one CAN ID and classic CAN's eight-byte
 maximum payload. It does not implement generated configuration, signal
 endianness variants, update bits, deadline monitoring, transmission modes,
-PDU groups, routing tables, CAN arbitration, bit timing, CRC, ACK, error
-frames, interrupts, controller registers, transceiver control, OS scheduling,
-or hardware faults. A real AUTOSAR COM/PduR/CanIf/CanDrv integration is
-configuration-driven and substantially more complex.
+PDU groups, configurable routing tables, CAN arbitration, bit timing, CRC, ACK,
+error frames, interrupts, controller registers, transceiver control, OS
+scheduling, or hardware faults. A real AUTOSAR COM/PduR/CanIf/CanDrv integration
+is configuration-driven and substantially more complex.
 
 ## Build and run
 
