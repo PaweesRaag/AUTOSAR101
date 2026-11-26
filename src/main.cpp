@@ -9,23 +9,21 @@
 int main() {
     using namespace autosar101;
 
-    // Two ECU-local RTE instances and one simulated network medium.
     Rte ecu_a_rte;
     Rte ecu_b_rte;
     CanBus bus;
     CanIf ecu_a_can_if{bus};
     CanIf ecu_b_can_if{bus};
 
-    // ECU A application SWC publishes a typed signal to its RTE.
-    ecu_a_rte.write_vehicle_speed(SignalFrame{85});
-    const auto tx_signal = ecu_a_rte.read_vehicle_speed();
-    if (!tx_signal) {
-        std::cerr << "ECU A: no vehicle-speed sample available\n";
+    // ECU A application SWC publishes two typed signals to its local RTE.
+    ecu_a_rte.write_vehicle_speed(SignalFrame{85, 2400});
+    const auto tx_signals = ecu_a_rte.read_vehicle_speed();
+    if (!tx_signals) {
+        std::cerr << "ECU A: no vehicle-status sample available\n";
         return 1;
     }
 
-    // COM -> PduR -> CanIf -> simulated CAN bus.
-    const auto tx_pdu = Com::pack_vehicle_speed(*tx_signal);
+    const auto tx_pdu = Com::pack_vehicle_status(*tx_signals);
     const auto tx_frame = PduR::route_to_can(tx_pdu);
     if (!tx_frame || !ecu_a_can_if.transmit(*tx_frame)) {
         std::cerr << "ECU A: transmit path rejected the PDU\n";
@@ -40,7 +38,6 @@ int main() {
     }
     std::cout << std::dec << '\n';
 
-    // ECU B: CanIf -> PduR -> COM -> ECU-local RTE -> receiving SWC.
     const auto rx_frame = ecu_b_can_if.receive();
     if (!rx_frame) {
         std::cerr << "ECU B: no CAN frame received\n";
@@ -53,13 +50,13 @@ int main() {
         return 1;
     }
 
-    const auto rx_signal = Com::unpack_vehicle_speed(*rx_pdu);
-    if (!rx_signal) {
+    const auto rx_signals = Com::unpack_vehicle_status(*rx_pdu);
+    if (!rx_signals) {
         std::cerr << "ECU B: COM rejected the PDU\n";
         return 1;
     }
 
-    ecu_b_rte.write_vehicle_speed(*rx_signal);
+    ecu_b_rte.write_vehicle_speed(*rx_signals);
     const auto swc_input = ecu_b_rte.read_vehicle_speed();
     if (!swc_input) {
         std::cerr << "ECU B: RTE has no received value\n";
@@ -67,6 +64,7 @@ int main() {
     }
 
     std::cout << "ECU B application SWC received VehicleSpeed = "
-              << swc_input->vehicle_speed_kmh << " km/h\n";
+              << swc_input->vehicle_speed_kmh << " km/h, EngineSpeed = "
+              << swc_input->engine_speed_rpm << " rpm\n";
     return 0;
 }
