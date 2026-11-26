@@ -10,6 +10,7 @@ constexpr std::size_t kCanMaxPayload = 8;
 
 struct SignalFrame {
     std::uint16_t vehicle_speed_kmh{0};
+    std::uint16_t engine_speed_rpm{0};
 };
 
 struct Pdu {
